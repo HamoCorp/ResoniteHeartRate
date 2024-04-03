@@ -11,7 +11,7 @@ If you prefer to use a web socket program instead of modding your game then use 
 
 3. Place [ResoniteHeartRate.dll](https://github.com/HamoCorp/CustomLegacyUI/releases/latest/download/ResoniteHeartRate.dll) into your `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` for a default install. You can create it if it's missing, or if you launch the game once with ResoniteModLoader installed it will create the folder for you.
 
-4. Start the game. go to you mod setting and enter your [Pulsoid key](https://pulsoid.net) and save settings.
+4. Start the game. go to your mod setting and enter your [Pulsoid key](https://pulsoid.net) and save settings.
 
 ## Reading your HeartRate
 
