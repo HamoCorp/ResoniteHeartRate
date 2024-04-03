@@ -15,4 +15,12 @@ If you prefer to use a web socket program instead of modding your game then use 
 
 ## Reading your HeartRate
 
-You can find a basic Heart Rate monitor in my public folder. All you need to do is parent it under your avatar and it will automatically link the variable and start beating.
+Option 1: You can find a basic Heart Rate monitor in my public folder. All you need to do is parent it under your avatar and it will automatically link the variable and start beating.
+
+
+![2024-04-03 19 41 57](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/d0837159-fb1c-4354-b9c0-2364ddbf3013)
+
+
+Option 2: If you would rather make your own interface or get the int value of heart rate you will find the heart rate slot under your user root with a dynamic variable:
+
+![2024-04-03 19 44 58](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/e7d6ca43-ec45-4a89-962d-367484a8f901)
