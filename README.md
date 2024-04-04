@@ -2,7 +2,7 @@
 
 This is a Heart Rate mod using [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader) mod for [Resonite](https://resonite.com/) it will work for all heart rate monitor compatible with [Pulsoid](https://pulsoid.net). This mod is an alternative to using web sockets for sending in heart rate data, I created it as opening a desktop program from VR every day became annoying. This has some benefits over web sockets as it uses value streams like other tracking data, using streamed data instead of sync makes it less likely to become desynced.
 
-If you prefer to use a web socket program instead of modding your game then use [HR2VRC](https://github.com/200Tigersbloxed/HRtoVRChat_OSC).
+If you prefer to use a web socket program instead of modding your game then use [HR2VRC](https://github.com/200Tigersbloxed/HRtoVRChat_OSC). or [LynxVR](https://github.com/lynixfur/LynxVR)
 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
