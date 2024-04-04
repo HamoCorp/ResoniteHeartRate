@@ -24,3 +24,6 @@ Paste this link into resonite: `resrec:///U-HamoCorp/R-e5c234a3-c4d4-4645-af54-7
 Option 2: If you would rather make your own interface or get the int value of heart rate you will find the heart rate slot under your user root with a dynamic variable:
 
 ![2024-04-03 19 44 58](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/e7d6ca43-ec45-4a89-962d-367484a8f901)
+
+## Problems
+if the heart rate stops updating try respawning.
