@@ -7,7 +7,7 @@ If you prefer to use a web socket program instead of modding your game then use 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
 
-2. To be able to edit the UI settings you also need to have this mod installed [Resonite Mod Settings](https://github.com/badhaloninja/ResoniteModSettings).
+2. To be able to edit settings you also need to have this mod installed [Resonite Mod Settings](https://github.com/badhaloninja/ResoniteModSettings).
 
 3. Place [ResoniteHeartRate.dll](https://github.com/HamoCorp/CustomLegacyUI/releases/latest/download/ResoniteHeartRate.dll) into your `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` for a default install. You can create it if it's missing, or if you launch the game once with ResoniteModLoader installed it will create the folder for you.
 
@@ -25,5 +25,8 @@ Option 2: If you would rather make your own interface or get the int value of he
 
 ![2024-04-03 19 44 58](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/e7d6ca43-ec45-4a89-962d-367484a8f901)
 
+## Future features
+I want to add support for hyperate as well although coincidently as I started working on this mod Froox posted [github issue](https://github.com/Yellow-Dog-Man/Resonite-Issues/issues/1538) about adding native heart rate to the Resonite so this mod might soon be unnecessary.
+
 ## Problems
-if the heart rate stops updating try respawning.
+if the heart rate stops updating try respawning. There's a few bugs with it randomly stopping that I have to work out. somehow 😕
