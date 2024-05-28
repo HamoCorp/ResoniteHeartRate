@@ -11,8 +11,8 @@ If you prefer to use a web socket program instead of modding your game then use 
 
 2. To be able to edit settings you also need to have this mod installed [Resonite Mod Settings](https://github.com/badhaloninja/ResoniteModSettings).
 
-3. From the latest release unzip [ResoniteHeartRatedll.zip](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/ResoniteHeartRate.dll) inside there are 2 dll files `websocket-sharp-core.dll` is a library required! to send HeartRate data to Hype Rate put this in `rml_libs` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs`.
-Then you put `ResoniteHeartRate.dll` into the `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` You can create these folders if there missing.
+3. From the latest release there are 2 dll files [websocket-sharp-core.dll](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/websocket-sharp-core.dll) is a library required! to send HeartRate data to Hype Rate put this in `rml_libs` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs`.
+Then you put [ResoniteHeartRate.dll](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/ResoniteHeartRate.dll) into the `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` You can create these folders if there missing.
 
 ![dlls](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/ac71ccbd-e31d-4b49-9aa9-d5cae79416b0)
 
