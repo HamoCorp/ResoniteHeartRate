@@ -15,6 +15,7 @@ namespace ResoniteHeartRate {
 
             string hrjoin = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").toJson();
 
+            
             _ws.Connect();
             _ws.Send(hrjoin);
 

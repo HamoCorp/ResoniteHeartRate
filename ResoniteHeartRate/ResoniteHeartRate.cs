@@ -12,7 +12,7 @@ namespace ResoniteHeartRate {
 
         public override string Name => "Resonite HeartRate";
         public override string Author => "HamoCorp";
-        public override string Version => "1.0.1";
+        public override string Version => "1.0.2";
 
         public override string Link => "https://github.com/HamoCorp/ResoniteHeartRate";
 
@@ -110,11 +110,7 @@ namespace ResoniteHeartRate {
                     _valueStreamList.Remove(vs);
                 }
             }
-            _valueStreamList.Last().Value = HeartRate;
-
-            //if (_usingFacets) {
-            _UserSpaceHRValueStream.Value = HeartRate;
-            
+            _valueStreamList.Last().Value = HeartRate;            
         }
 
         private static void setStreamPerams(ValueStream<int> stream) {
@@ -126,39 +122,33 @@ namespace ResoniteHeartRate {
             stream.FullFrameMin = 0;
             stream.FullFrameMax = 999;
         }
-        private static void addHeartRateDataSlot() {
+        private static Slot addHeartRateDataSlot(Slot userRoot, bool userSpace) {
 
-            _valueStreamList.Add(_LocalUserRootSlot.LocalUser.GetStreamOrAdd<ValueStream<int>>("HeartRateMod", setStreamPerams));
+            _valueStreamList.Add(userRoot.LocalUser.GetStreamOrAdd<ValueStream<int>>("HeartRateMod", setStreamPerams));
             _valueStreamList.Last().Value = 0;
 
-            _HeartRateSlot = _LocalUserRootSlot.AddSlot(Config.GetValue(_slotName), true);
+            Slot HeartRateSlot = userRoot.AddSlot(Config.GetValue(_slotName), true);
 
-            DynamicValueVariable<int> dynamicValueHR = _HeartRateSlot.AttachComponent<DynamicValueVariable<int>>(true, null);
-            dynamicValueHR.VariableName.Value = "User/" + Config.GetValue(_dynVarName);
-            ValueDriver<int> valueDriver = _HeartRateSlot.AttachComponent<ValueDriver<int>>(true, null);
+            string DName;
+            if (userSpace) {
+                DName = "World/com.HamoCorp.ResoniteHeartRate";
+
+                _userSpaceResetboolButton = HeartRateSlot.AttachComponent<DynamicValueVariable<bool>>(true, null);
+                _userSpaceResetboolButton.VariableName.Value = "World/ResoniteHeartRate.Reset";
+                _userSpaceResetboolButton.Value.Value = false;
+            }
+            else {
+                DName = "User/" + Config.GetValue(_dynVarName);
+            }
+
+            DynamicValueVariable<int> dynamicValueHR = HeartRateSlot.AttachComponent<DynamicValueVariable<int>>(true, null);
+            dynamicValueHR.VariableName.Value = DName;
+            ValueDriver<int> valueDriver = HeartRateSlot.AttachComponent<ValueDriver<int>>(true, null);
             
             valueDriver.ValueSource.Target = _valueStreamList.Last();
             valueDriver.DriveTarget.Target = dynamicValueHR.Value;
 
-        }
-        private static void addUserSpaceHeartRateDataSlot() {
-
-            _UserSpaceHRValueStream = _LocalUserRootSlot.LocalUser.GetStreamOrAdd<ValueStream<int>>("HeartRateModLocal", setStreamPerams);
-            _UserSpaceHRValueStream.Value = 0;
-            
-            _UserSpaceHeartRateSlot = _LocalUserRootSlot.LocalUserSpace.AddSlot(Config.GetValue(_slotName), false);
-
-            DynamicValueVariable<int> UserSpacedynValueHR = _UserSpaceHeartRateSlot.AttachComponent<DynamicValueVariable<int>>(true, null);
-            UserSpacedynValueHR.VariableName.Value = "World/com.HamoCorp.ResoniteHeartRate";
-            ValueDriver<int> UserSpaceHRValueDriver = _UserSpaceHeartRateSlot.AttachComponent<ValueDriver<int>>(true, null);
-            
-            UserSpaceHRValueDriver.ValueSource.Target = _UserSpaceHRValueStream;
-            UserSpaceHRValueDriver.DriveTarget.Target = UserSpacedynValueHR.Value;
-
-            _userSpaceResetboolButton = _UserSpaceHeartRateSlot.AttachComponent<DynamicValueVariable<bool>>(true, null);
-            _userSpaceResetboolButton.VariableName.Value = "World/ResoniteHeartRate.Reset";
-            _userSpaceResetboolButton.Value.Value = false;
-
+            return HeartRateSlot;
         }
        
         [HarmonyPatch]
@@ -168,69 +158,63 @@ namespace ResoniteHeartRate {
             [HarmonyPatch(typeof(UserRoot), "OnStart")]
             public static void EditLocalUserRoot(UserRoot __instance) {
 
-                if (__instance.Slot != null) {
-                    
-                    if (__instance.Slot.ActiveUser != null && __instance.Slot.ActiveUser.IsLocalUser) {
-
-                        if (__instance.Slot.Name.StartsWith("User")) {
-                            _LocalUserRootSlot = __instance.Slot;
-                            if (Config.GetValue(_enabled)) {
-
-                                addHeartRateDataSlot();
-                                //_usingFacets = Config.GetValue(_facetsEnable);
-                                if (_UserSpaceHeartRateSlot == null ) {//&& _usingFacets
-                                addUserSpaceHeartRateDataSlot();
-                                }
-                                if (_HRLoop.IsAlive) {
-                                    _HRLoop.Abort();
-                                    _HRLoop = new Thread(HRUpdate);
-                                }
-                                if (Config.GetValue(_pulsoidKey) != _pulsoidKeyPrev) {
-                                    _pulsoidKeyPrev = Config.GetValue(_pulsoidKey);
-                                    _HR.HeartRateInit(_pulsoidKeyPrev, Config.GetValue(_service));
-                                    
-                                }
-
-                                if (Config.GetValue(_HypeRateKey) != _HypeRateKeyPrev) {
-                                    _HypeRateKeyPrev = Config.GetValue(_HypeRateKey);
-                                    if(Config.GetValue(_internalTesting) == true) {
-                                        _HypeRateKeyPrev = "internal-testing";
-                                    }
-                                    _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
-                                }
-
-                                if(Config.GetValue(_service) != HeartRateClient.HRService.HypeRate) {
-                                    _HypeRate = null;
-                                }
-                                _HRLoop.Start();
-                            }
-                        }
-                    }
-
-                    
+                if (__instance.Slot.ActiveUser == null || !__instance.Slot.ActiveUser.IsLocalUser || !__instance.Slot.Name.StartsWith("User") || !Config.GetValue(_enabled)) {
+                    return;
                 }
+                bool userSpace = __instance.Slot.World.IsUserspace();
+                addHeartRateDataSlot(__instance.Slot, userSpace);
+
+                if (!userSpace) {
+                    if (_HRLoop == null) {
+                        _HRLoop = new Thread(HRUpdate);
+                    }
+                    else {
+                        if (_HRLoop.IsAlive) {
+                            _HRLoop.Abort();
+                        }
+                        _HRLoop = new Thread(HRUpdate);
+                    }
+                }
+
+                if (Config.GetValue(_pulsoidKey) != _pulsoidKeyPrev) {
+                    _pulsoidKeyPrev = Config.GetValue(_pulsoidKey);
+                    _HR.HeartRateInit(_pulsoidKeyPrev, Config.GetValue(_service));
+
+                }
+
+                if (Config.GetValue(_HypeRateKey) != _HypeRateKeyPrev) {
+                    _HypeRateKeyPrev = Config.GetValue(_HypeRateKey);
+                    if (Config.GetValue(_internalTesting) == true) {
+                        _HypeRateKeyPrev = "internal-testing";
+                    }
+                    _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
+                }
+
+                if (Config.GetValue(_service) != HeartRateClient.HRService.HypeRate) {
+                    _HypeRate = null;
+                }
+                _HRLoop.Start();
+
+
+
+
             }
         }
 
-        //private static bool _usingFacets = true;
         private static string _token = "";
         private static string _pulsoidKeyPrev = "";
         private static string _HypeRateKeyPrev = "";
 
         private static HeartRateClient _HR = new HeartRateClient();
         private static HypeRateWebSocket _HypeRate;
-        private static Thread _HRLoop = new Thread(HRUpdate);
+        private static Thread _HRLoop;
 
-        private static Slot _LocalUserRootSlot;
-        private static Slot _HeartRateSlot;
         private static List<ValueStream<int>> _valueStreamList = new List<ValueStream<int>>();
 
-        private static Slot _UserSpaceHeartRateSlot;
-        private static ValueStream<int> _UserSpaceHRValueStream;
         private static DynamicValueVariable<bool> _userSpaceResetboolButton;
 
         [AutoRegisterConfigKey]
-        private static readonly ModConfigurationKey<bool> _enabled = new ModConfigurationKey<bool>("enabled", "Enabled (Require Respawn for changing any settings)", () => true);
+        private static readonly ModConfigurationKey<bool> _enabled = new ModConfigurationKey<bool>("enabled", "Enabled (Require Respawn for changing some settings)", () => true);
 
         [AutoRegisterConfigKey]
         public static readonly ModConfigurationKey<dummy> _d29 = new ModConfigurationKey<dummy>(nameGenerator(29), "");

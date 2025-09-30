@@ -52,8 +52,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
-    <Reference Include="websocket-sharp-core">
-      <HintPath>..\..\websockettest\websockettest\bin\Debug\websocket-sharp-core.dll</HintPath>
+    <Reference Include="websocket-sharp-core, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs\websocket-sharp-core.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
