@@ -12,7 +12,7 @@ namespace ResoniteHeartRate {
 
         public override string Name => "Resonite HeartRate";
         public override string Author => "HamoCorp";
-        public override string Version => "1.0.2";
+        public override string Version => "1.0.3";
 
         public override string Link => "https://github.com/HamoCorp/ResoniteHeartRate";
 
@@ -43,7 +43,7 @@ namespace ResoniteHeartRate {
 
         private static void HRUpdate() {
             int hearRate = 0;
-            while (true) {
+            while (!_stopHRThread) {
                 Thread.Sleep(UPDATE_RATE);
                 if (_HR.TimerCount >= 18) {
                     // Reset
@@ -165,16 +165,18 @@ namespace ResoniteHeartRate {
                 addHeartRateDataSlot(__instance.Slot, userSpace);
 
                 if (!userSpace) {
-                    if (_HRLoop == null) {
-                        _HRLoop = new Thread(HRUpdate);
+                    if (_HRLoop != null && _HRLoop.IsAlive) {
+                        // signal thread to exit
+                        _stopHRThread = true;
+
+                        // optionally wait briefly for shutdown
+                        _HRLoop.Join(_threadEndDeltay);
                     }
-                    else {
-                        if (_HRLoop.IsAlive) {
-                            _HRLoop.Abort();
-                        }
-                        _HRLoop = new Thread(HRUpdate);
-                    }
+
+                    _stopHRThread = false;
+                    _HRLoop = new Thread(HRUpdate);
                 }
+
 
                 if (Config.GetValue(_pulsoidKey) != _pulsoidKeyPrev) {
                     _pulsoidKeyPrev = Config.GetValue(_pulsoidKey);
@@ -208,6 +210,8 @@ namespace ResoniteHeartRate {
         private static HeartRateClient _HR = new HeartRateClient();
         private static HypeRateWebSocket _HypeRate;
         private static Thread _HRLoop;
+        private static volatile bool _stopHRThread;
+        private static int _threadEndDeltay = 200;
 
         private static List<ValueStream<int>> _valueStreamList = new List<ValueStream<int>>();
 
