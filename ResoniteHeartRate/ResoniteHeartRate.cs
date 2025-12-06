@@ -2,9 +2,12 @@
 using FrooxEngine;
 using HarmonyLib;
 using ResoniteModLoader;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ResoniteHeartRate {
 
@@ -12,7 +15,7 @@ namespace ResoniteHeartRate {
 
         public override string Name => "Resonite HeartRate";
         public override string Author => "HamoCorp";
-        public override string Version => "1.0.3";
+        public override string Version => "1.0.4";
 
         public override string Link => "https://github.com/HamoCorp/ResoniteHeartRate";
 
@@ -41,62 +44,67 @@ namespace ResoniteHeartRate {
             return name;
         }
 
-        private static void HRUpdate() {
-            int hearRate = 0;
-            while (!_stopHRThread) {
-                Thread.Sleep(UPDATE_RATE);
-                if (_HR.TimerCount >= 18) {
-                    // Reset
-                    if (_userSpaceResetboolButton.Value.Value == true) {
+        private static void ResetButtonPressed() {
+            // Immediately reset engine values on main thread
+            updateValueStreamValues(0);
+            _HR = null;
+            _HypeRate = null;
 
-                        updateValueStreamValues(0);
-
-                        _HR = null;
-                        _HypeRate = null;
-
-                        Thread.Sleep(3000);
-                        if (Config.GetValue(_service) == HeartRateClient.HRService.HypeRate) {
-
-                            _HypeRateKeyPrev = Config.GetValue(_HypeRateKey);
-                            _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
-                        }
-                        else if(Config.GetValue(_service) == HeartRateClient.HRService.Pulsoid) {
-                            Thread.Sleep(10000);
-                        }
-
-                        _pulsoidKeyPrev = Config.GetValue(_pulsoidKey);
-                        _HR = new HeartRateClient();
-                        _token = _HR.HeartRateInit(_pulsoidKeyPrev, Config.GetValue(_service));
-
-                        _HR.TimerCount = 0;
-                        continue;
-                    }
-                    else {
-
-                        if (Config.GetValue(_service) == HeartRateClient.HRService.HypeRate) {
-                            _HypeRate.SendKeepAlive();
-                            if (_HypeRate.getHypeRateAlive() == false) {
-                                _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
-                            }
-                        }
-                        _HR.TimerCount = 0;
-                    }                    
-                }
+            // Background reconnect logic
+            Task.Run(() =>
+            {
+                Thread.Sleep(3000);
 
                 if (Config.GetValue(_service) == HeartRateClient.HRService.HypeRate) {
-                    if (_HypeRate == null) {
-                        _HypeRate = new HypeRateWebSocket(Config.GetValue(_HypeRateKey));
-                    }
-
-                    hearRate = _HypeRate.getHypeRateHeartRate();
+                    _HypeRateKeyPrev = Config.GetValue(_HypeRateKey);
+                    _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
                 }
-                else {
+                else if (Config.GetValue(_service) == HeartRateClient.HRService.Pulsoid) {
+                    Thread.Sleep(10000);
+                }
+
+                _pulsoidKeyPrev = Config.GetValue(_pulsoidKey);
+                _HR = new HeartRateClient();
+                _token = _HR.HeartRateInit(_pulsoidKeyPrev, Config.GetValue(_service));
+
+                // Reset flag on main thread
+                _mainThreadActions.Enqueue(() => { _resetPending = false; });
+            });
+        }
+
+        private static void HRUpdate() {
+            while (!_stopHRThread) {
+                Thread.Sleep(UPDATE_RATE);
+
+                int hearRate = 0;
+
+                if (Config.GetValue(_service) == HeartRateClient.HRService.HypeRate) {
+                    // Ensure WebSocket exists
+                    if (_HypeRate == null)
+                        _HypeRate = new HypeRateWebSocket(Config.GetValue(_HypeRateKey));
+
+                    // Poll heart rate
+                    hearRate = _HypeRate.getHypeRateHeartRate();
+
+                    // Send keep-alive directly (no need to enqueue)
+                    _HypeRate.SendKeepAlive();
+
+                    // Reconnect if dead
+                    if (!_HypeRate.getHypeRateAlive()) {
+                        _HypeRate = new HypeRateWebSocket(_HypeRateKeyPrev);
+                    }
+                }
+                else if (_HR != null) {
                     hearRate = _HR.ReadCurrentHR(_pulsoidKeyPrev, Config.GetValue(_service));
                 }
 
-                updateValueStreamValues(hearRate);
-
-                _HR.TimerCount++;
+                // Schedule engine updates on main thread
+                int finalHR = hearRate;
+                _mainThreadActions.Enqueue(() =>
+                {
+                    updateValueStreamValues(finalHR);
+                    if (_HR != null) _HR.TimerCount++;
+                });
             }
         }
 
@@ -165,16 +173,15 @@ namespace ResoniteHeartRate {
                 addHeartRateDataSlot(__instance.Slot, userSpace);
 
                 if (!userSpace) {
+                    // In your UserRoot OnStart patch, start HR thread safely
                     if (_HRLoop != null && _HRLoop.IsAlive) {
-                        // signal thread to exit
                         _stopHRThread = true;
-
-                        // optionally wait briefly for shutdown
                         _HRLoop.Join(_threadEndDeltay);
                     }
 
                     _stopHRThread = false;
-                    _HRLoop = new Thread(HRUpdate);
+                    _HRLoop = new Thread(HRUpdate) { IsBackground = true };
+                    _HRLoop.Start();
                 }
 
 
@@ -195,13 +202,34 @@ namespace ResoniteHeartRate {
                 if (Config.GetValue(_service) != HeartRateClient.HRService.HypeRate) {
                     _HypeRate = null;
                 }
+
                 _HRLoop.Start();
 
 
+            }
 
+            [HarmonyPostfix]
+            [HarmonyPatch(typeof(Userspace), "OnCommonUpdate")]
+            public static void UspaceUpdate(Userspace __instance) {
+
+                // Process queued actions
+                while (_mainThreadActions.TryDequeue(out Action action)) {
+                    try { action(); }
+                    catch (Exception ex) { ResoniteMod.Error($"Queued main-thread action failed: {ex}"); }
+                }
+
+                // Trigger reset if button pressed
+                if (!_resetPending && _userSpaceResetboolButton?.Value?.Value == true) {
+                    _resetPending = true;
+
+                    _mainThreadActions.Enqueue(() => ResetButtonPressed());
+                }
 
             }
         }
+
+        private static bool _resetPending = false;
+        private static readonly ConcurrentQueue<Action> _mainThreadActions = new ConcurrentQueue<Action>();
 
         private static string _token = "";
         private static string _pulsoidKeyPrev = "";
@@ -252,10 +280,10 @@ namespace ResoniteHeartRate {
         public static readonly ModConfigurationKey<dummy> _d1 = new ModConfigurationKey<dummy>(nameGenerator(1), "");
 
         [AutoRegisterConfigKey]
-        public static readonly ModConfigurationKey<string> _HypeRateKey = new ModConfigurationKey<string>("HypeRate Key", "HypeRate Key", () => "");
+        public static readonly ModConfigurationKey<string> _HypeRateKey = new ModConfigurationKey<string>("HypeRate Key", "HypeRate session id", () => "");
 
         [AutoRegisterConfigKey]
-        public static readonly ModConfigurationKey<dummy> _d32 = new ModConfigurationKey<dummy>(nameGenerator(32), "Get your HypeRate Key from https://hyperate.io");
+        public static readonly ModConfigurationKey<dummy> _d32 = new ModConfigurationKey<dummy>(nameGenerator(32), "Get your HypeRate session id from https://hyperate.io");
 
         [AutoRegisterConfigKey]
         public static readonly ModConfigurationKey<dummy> _d26 = new ModConfigurationKey<dummy>(nameGenerator(26), "");

@@ -1,26 +1,51 @@
-﻿using System.Linq;
+﻿using ResoniteModLoader;
+using System;
+using System.Linq;
 using WebSocketSharp;
-using ResoniteModLoader;
 
 namespace ResoniteHeartRate {
     internal class HypeRateWebSocket {
 
         public HypeRateWebSocket(string HypeRateID) {
 
-            _ws = new WebSocket("wss://app.hyperate.io/socket/websocket?token=" + SECRET_UNIQUE_HYPERATE_API_KEY);
+            string url = "wss://app.hyperate.io/socket/websocket?token=" + SECRET_UNIQUE_HYPERATE_API_KEY;
 
+            _ws = new WebSocket(url);
+
+            // Required: force modern TLS
+            _ws.SslConfiguration.EnabledSslProtocols =
+                System.Security.Authentication.SslProtocols.Tls12
+                | System.Security.Authentication.SslProtocols.Tls12;
+
+            // Debug logging
+            _ws.OnError += (s, e) =>
+            {
+                ResoniteMod.Error($"[HypeRate WS ERROR] {e.Message}\n{e.Exception}");
+            };
+
+            _ws.OnClose += (s, e) =>
+            {
+                ResoniteMod.Error($"[HypeRate WS CLOSED] Code={e.Code}, Reason={e.Reason}");
+            };
 
             _ws.OnMessage += Ws_OnMessage;
-            _ws.OnError += Ws_OnError;
 
-            string hrjoin = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").toJson();
+            try {
+                _ws.Connect();
+            }
+            catch (Exception ex) {
+                ResoniteMod.Error("[HypeRate] Exception during Connect(): " + ex);
+                return;
+            }
 
-            
-            _ws.Connect();
-            _ws.Send(hrjoin);
+            if (!_ws.IsAlive) {
+                ResoniteMod.Error("[HypeRate] WebSocket failed to connect.");
+                return;
+            }
 
-
-
+            // Only send join message AFTER a successful connect
+            string joinMsg = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").toJson();
+            _ws.Send(joinMsg);
         }
 
         public void SendKeepAlive() {
@@ -34,17 +59,26 @@ namespace ResoniteHeartRate {
 
         private static void Ws_OnMessage(object sender, MessageEventArgs e) {
 
-            HypeRateJson hj = new HypeRateJson(e.Data);
-            string evnt = hj.getEvent();
-            if (evnt == "hr_update") {
+            try {
+                HypeRateJson hj = new HypeRateJson(e.Data);
+                string evnt = hj.getEvent();
 
-                _heartRate = hj.getHeartRate();
+                switch (evnt) {
+                    case "hr_update":
+                        _heartRate = hj.getHeartRate();
+                        break;
+
+                    case "phx_reply":
+                        _HypeRateIsAlive = true;
+                        break;
+
+                    default:
+                        ResoniteMod.Error("Unknown HypeRate event: " + evnt);
+                        break;
+                }
             }
-            else if (evnt == "phx_reply") {
-                _HypeRateIsAlive = true;
-            }
-            else {
-                ResoniteMod.Error("error with getting hyperate event" + evnt);
+            catch (Exception ex) {
+                ResoniteMod.Error("[HypeRate] Error processing message: " + ex);
             }
 
         }
