@@ -36,5 +36,4 @@ Option 2: If you would rather make your own interface or get the int value of he
 
 ## Problems
 If you experience any problems with the mod not working heart rate not updateing then try respawning.
-I found Hyperate to be more reliable than Pulsoid which can be sus as sometimes it randomly stops working.
 Ill try an fix any bugs although might not be nessasary when this [github issue](https://github.com/Yellow-Dog-Man/Resonite-Issues/issues/1538) gets added to the game
