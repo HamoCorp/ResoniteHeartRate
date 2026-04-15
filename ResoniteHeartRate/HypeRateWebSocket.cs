@@ -42,7 +42,7 @@ internal class HypeRateWebSocket {
 		}
 
 		// Only send join message AFTER a successful connect
-		string joinMsg = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").toJson();
+		string joinMsg = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").ToJson();
 		_ws.Send(joinMsg);
 	}
 
@@ -56,12 +56,12 @@ internal class HypeRateWebSocket {
 
 	private static void Ws_OnMessage(object sender, MessageEventArgs e) {
 		try {
-			HypeRateJson hj = new HypeRateJson(e.Data);
-			string evnt = hj.getEvent();
+			HypeRateJson hj = new(e.Data);
+			string evnt = hj.GetEvent();
 
 			switch (evnt) {
 				case "hr_update":
-					_heartRate = hj.getHeartRate();
+					_heartRate = hj.GetHeartRate();
 					break;
 
 				case "phx_reply":
@@ -77,10 +77,10 @@ internal class HypeRateWebSocket {
 		}
 	}
 
-	public int getHypeRateHeartRate() { return _heartRate; }
+	public int GetHypeRateHeartRate() { return _heartRate; }
 
-	public bool getHypeRateAlive() { return _HypeRateIsAlive; }
-	public void setHypeRateAliveOnLoop() { _HypeRateIsAlive = false; }
+	public bool GetHypeRateAlive() { return _HypeRateIsAlive; }
+	public void SetHypeRateAliveOnLoop() { _HypeRateIsAlive = false; }
 
 	//my Secret asigned api key from https://www.hyperate.io/api
 	private const string SECRET_UNIQUE_HYPERATE_API_KEY = "dbbxSOFxzN9ySSrz53eXXtJIQjMZ3ZIOJfMV6fG9J4jbjn9vJD2vsFm7rYqrUgs3";
@@ -119,7 +119,7 @@ internal class HypeRateWebSocket {
 				ResoniteMod.Error("not correct hyperate format recived");
 			}
 		}
-		public string toJson() {
+		public string ToJson() {
 			const char q = '"';
 
 			string json1 = q + "topic" + q + ": " + q + _topic + q + ",";
@@ -130,11 +130,11 @@ internal class HypeRateWebSocket {
 		}
 
 		public static string KeepAliveMessage() {
-			return new HypeRateJson("phoenix", "heartbeat", "", "0").toJson();
+			return new HypeRateJson("phoenix", "heartbeat", "", "0").ToJson();
 		}
 
-		public string getEvent() { return _event; }
-		public int getHeartRate() { return _HeartRate; }
+		public string GetEvent() { return _event; }
+		public int GetHeartRate() { return _HeartRate; }
 
 		private string _topic;
 		private string _event;
