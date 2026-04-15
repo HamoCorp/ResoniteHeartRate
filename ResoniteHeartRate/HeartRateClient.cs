@@ -1,190 +1,159 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.Net;
+
 using ResoniteModLoader;
 
-namespace ResoniteHeartRate {
-    internal class HeartRateClient {
+namespace ResoniteHeartRate;
 
-        public int TimerCount = 0;
-        
-        public enum HRService {
-            Pulsoid,
-            HypeRate,
-            Debug_Values
-        }
-        public enum errorMessages {
-            AUTHENTICATION = 0,
-            READ = 1,
-            GENERATING_FORMAT = 2,
-            CURRENTDATA_FORMAT = 3
-        }
-        public string HeartRateInit(string Key, HRService service = HRService.Pulsoid) {
+internal class HeartRateClient {
+	public int TimerCount = 0;
 
-            string token = "";
+	public enum HRService {
+		Pulsoid,
+		HypeRate,
+		Debug_Values
+	}
+	public enum errorMessages {
+		AUTHENTICATION = 0,
+		READ = 1,
+		GENERATING_FORMAT = 2,
+		CURRENTDATA_FORMAT = 3
+	}
+	public string HeartRateInit(string Key, HRService service = HRService.Pulsoid) {
+		string token = "";
 
-            if (service == HRService.Pulsoid) {
+		if (service == HRService.Pulsoid) {
 
-                string jsonData = SendHRhttpPulsoid("https://dev.pulsoid.net/api/v1/token/validate", Key, errorMessages.AUTHENTICATION);
+			string jsonData = SendHRhttpPulsoid("https://dev.pulsoid.net/api/v1/token/validate", Key, errorMessages.AUTHENTICATION);
 
-                try {
-                    foreach (string commas in jsonData.Split(',')) {
+			try {
+				foreach (string commas in jsonData.Split(',')) {
 
-                        if (commas.Contains("client_id")) {
-                            token = commas.Split('"')[3];
+					if (commas.Contains("client_id")) {
+						token = commas.Split('"')[3];
 
-                        }
-                    }
-                }
-                catch { ResoniteMod.Error(getErrorMessage(errorMessages.GENERATING_FORMAT)); }
+					}
+				}
+			} catch { ResoniteMod.Error(getErrorMessage(errorMessages.GENERATING_FORMAT)); }
 
-                return token;
-            }
-            else if (service == HRService.HypeRate) {
-                return "";
-            }
-            else {
-                return "";
-            }
+			return token;
+		} else if (service == HRService.HypeRate) {
+			return "";
+		} else {
+			return "";
+		}
+	}
 
-        }
+	public int ReadCurrentHR(string Key, HRService service = HRService.Pulsoid) {
+		int HeartRate = 0;
 
-        public int ReadCurrentHR(string Key, HRService service = HRService.Pulsoid) {
+		if (service == HRService.Pulsoid) {
+			string jsonData = SendHRhttpPulsoid("https://dev.pulsoid.net/api/v1/data/heart_rate/latest", Key, errorMessages.READ);
 
-            int HeartRate = 0;
+			try {
+				foreach (string commas in jsonData.Split(',')) {
+					if (commas.Contains("heart_rate")) {
+						string heartRateStr = commas.Split(':')[2].Split('}')[0];
 
-            if (service == HRService.Pulsoid) {
-                string jsonData = SendHRhttpPulsoid("https://dev.pulsoid.net/api/v1/data/heart_rate/latest", Key, errorMessages.READ);
-                
-                try {
-                    foreach (string commas in jsonData.Split(',')) {
-                        if (commas.Contains("heart_rate")) {
-                            string heartRateStr = commas.Split(':')[2].Split('}')[0];
+						int.TryParse(heartRateStr, out HeartRate);
+					}
+				}
+			} catch {
+				ResoniteMod.Error(getErrorMessage(errorMessages.CURRENTDATA_FORMAT));
+				HeartRate = 0;
+			}
 
-                            int.TryParse(heartRateStr, out HeartRate);
-                        }
-                    }
-                }
-                catch {
-                    ResoniteMod.Error(getErrorMessage(errorMessages.CURRENTDATA_FORMAT));
-                    HeartRate = 0;
-                }
+			return HeartRate;
 
-                return HeartRate;
+		} else if (service == HRService.HypeRate) {
+			return HeartRate = 69;
+		} else {
+			return (TimerCount * 3) + 60;
+		}
+	}
 
-            }else if (service == HRService.HypeRate) {
-                return HeartRate = 69;
-            }
+	public void HypeRateKeep_Alive() { }
 
-            else {
-                return (TimerCount*3) + 60;
-            }
-        }
+	private static string getErrorMessage(errorMessages ErrorCode) {
+		string message;
 
-        public void HypeRateKeep_Alive() {
+		switch (ErrorCode) {
+			case errorMessages.AUTHENTICATION:
+			default:
+				message = "Heartrate Error: Authenticating token failed";
+				break;
+			case errorMessages.READ:
+				message = "Heartrate Error: Could not Read heartrate";
+				break;
+			case errorMessages.GENERATING_FORMAT:
+				message = "Heartrate Error: Sending Pulsoid Key did not return correct Data";
+				break;
+			case errorMessages.CURRENTDATA_FORMAT:
+				message = "Heartrate Error: Trying to get current HeartRate did not return correct Data";
+				break;
+		}
+		return message;
+	}
 
-        }
+	public String SendHRhttpPulsoid(string urlStr, string KEY, errorMessages errorCode, string method = "GET", string contentType = "application/json") {
+		var url = new Uri(urlStr);
+		var req = (HttpWebRequest)WebRequest.Create(url);
 
-        private static string getErrorMessage(errorMessages ErrorCode) {
-
-
-            string message;
-
-            switch (ErrorCode) {
-                case errorMessages.AUTHENTICATION:
-                default:
-
-                    message = "Heartrate Error: Authenticating token failed";
-                    break;
-                case errorMessages.READ:
-
-                    message = "Heartrate Error: Could not Read heartrate";
-                    break;
-                case errorMessages.GENERATING_FORMAT:
-
-                    message = "Heartrate Error: Sending Pulsoid Key did not return correct Data";
-                    break;
-                case errorMessages.CURRENTDATA_FORMAT:
-
-                    message = "Heartrate Error: Trying to get current HeartRate did not return correct Data";
-                    break;
+		req.Method = method;
+		req.Headers["Authorization"] = "Bearer " + KEY;
+		req.ContentType = contentType;
 
 
-            }
+		req.UseDefaultCredentials = true;
+		req.PreAuthenticate = true;
+		req.Credentials = CredentialCache.DefaultCredentials;
 
-            return message;
-        }
+		string jsonStr = "";
 
-        public String SendHRhttpPulsoid(string urlStr, string KEY, errorMessages errorCode, string method = "GET", string contentType = "application/json") {
+		try {
 
-            var url = new Uri(urlStr);
-            var req = (HttpWebRequest)WebRequest.Create(url);
+			var Response = (HttpWebResponse)req.GetResponse();
 
-            req.Method = method;
-            req.Headers["Authorization"] = "Bearer " + KEY;
-            req.ContentType = contentType;
+			var streaReader = new StreamReader(Response.GetResponseStream());
 
+			jsonStr = streaReader.ReadLine();
 
-            req.UseDefaultCredentials = true;
-            req.PreAuthenticate = true;
-            req.Credentials = CredentialCache.DefaultCredentials;
+		} catch {
+			ResoniteMod.Error(getErrorMessage(errorCode));
+			jsonStr = "";
+		}
 
-            string jsonStr = "";
+		return jsonStr;
+	}
 
-            try {
+	//https://github.com/HypeRate/DevDocs
+	public String HypeRateWebsocet(string urlStr, string topic, errorMessages errorCode, string Event = "GET") {
+		var url = new Uri(urlStr);
+		var req = (HttpWebRequest)WebRequest.Create(url);
 
-                var Response = (HttpWebResponse)req.GetResponse();
+		//req.Method = method;
+		req.Headers["topic"] = "hr " + topic;
+		req.Headers["event"] = Event;
+		req.Headers["payload"] = "{}";
+		req.Headers["ref"] = "Bearer ";
+		//req.ContentType = contentType;
 
-                var streaReader = new StreamReader(Response.GetResponseStream());
+		req.UseDefaultCredentials = true;
+		req.PreAuthenticate = true;
+		req.Credentials = CredentialCache.DefaultCredentials;
 
-                jsonStr = streaReader.ReadLine();
+		string jsonStr = "";
 
-            }
+		try {
+			var Response = (HttpWebResponse)req.GetResponse();
 
-            catch { 
-                ResoniteMod.Error(getErrorMessage(errorCode));
-                jsonStr = "";
-            }
+			var streaReader = new StreamReader(Response.GetResponseStream());
 
-            return jsonStr;
-        }
+			jsonStr = streaReader.ReadLine();
+		} catch {
+			ResoniteMod.Error(getErrorMessage(errorCode));
+			jsonStr = "";
+		}
 
-        //https://github.com/HypeRate/DevDocs
-        public String HypeRateWebsocet(string urlStr, string topic, errorMessages errorCode, string Event = "GET") {
-
-            var url = new Uri(urlStr);
-            var req = (HttpWebRequest)WebRequest.Create(url);
-
-            //req.Method = method;
-            req.Headers["topic"] = "hr " + topic;
-            req.Headers["event"] = Event;
-            req.Headers["payload"] = "{}";
-            req.Headers["ref"] = "Bearer ";
-            //req.ContentType = contentType;
-
-
-            req.UseDefaultCredentials = true;
-            req.PreAuthenticate = true;
-            req.Credentials = CredentialCache.DefaultCredentials;
-
-            string jsonStr = "";
-
-            try {
-
-                var Response = (HttpWebResponse)req.GetResponse();
-
-                var streaReader = new StreamReader(Response.GetResponseStream());
-
-                jsonStr = streaReader.ReadLine();
-
-            }
-
-            catch {
-                ResoniteMod.Error(getErrorMessage(errorCode));
-                jsonStr = "";
-            }
-
-            return jsonStr;
-        }
-    }
+		return jsonStr;
+	}
 }
