@@ -149,7 +149,6 @@ public class ResoniteHeartRate : ResoniteMod {
 		[HarmonyPostfix]
 		[HarmonyPatch(typeof(UserRoot), "OnStart")]
 		public static void EditLocalUserRoot(UserRoot __instance) {
-
 			if (__instance.Slot.ActiveUser == null || !__instance.Slot.ActiveUser.IsLocalUser || !__instance.Slot.Name.StartsWith("User") || !_enabled.Value) {
 				return;
 			}
@@ -167,7 +166,6 @@ public class ResoniteHeartRate : ResoniteMod {
 				_HRLoop = new Thread(HRUpdate) { IsBackground = true };
 				_HRLoop.Start();
 			}
-
 
 			if (_pulsoidKey.Value != _pulsoidKeyPrev) {
 				_pulsoidKeyPrev = _pulsoidKey.Value;
