@@ -112,7 +112,7 @@ public class ResoniteHeartRate : ResoniteMod {
 
 	private static void setStreamPerams(ValueStream<int> stream) {
 		stream.SetInterpolation();
-		stream.SetUpdatePeriod(0, 0);
+		stream.SetUpdatePeriod(_valueStreamUpdatePeriod.Value, 0);
 		stream.Encoding = ValueEncoding.Full;
 		stream.FullFrameBits = 10;
 		stream.FullFrameMin = 0;
@@ -284,6 +284,9 @@ public class ResoniteHeartRate : ResoniteMod {
 
 	[AutoRegisterConfigKey]
 	public static readonly ModConfigurationKey<string> _slotName = new ModConfigurationKey<string>("SlotName", "Slot Name under User Root", () => "HeartRate Mod");
+
+	[AutoRegisterConfigKey]
+	public static readonly ModConfigurationKey<uint> _valueStreamUpdatePeriod = new ModConfigurationKey<uint>("ValueStream Update Period", "How frequently the ValueStreams sends updates, smaller values = more frequent", () => 30);
 
 	[AutoRegisterConfigKey]
 	public static readonly ModConfigurationKey<dummy> _d9 = new ModConfigurationKey<dummy>(nameGenerator(9), "");
