@@ -8,14 +8,8 @@ If you prefer to use a web socket program instead of modding your game then use 
 
 ## Installation
 1. Install [ResoniteModLoader](https://github.com/resonite-modding-group/ResoniteModLoader).
-
-2. To be able to edit settings you also need to have this mod installed [Resonite Mod Settings](https://github.com/badhaloninja/ResoniteModSettings).
-
-3. From the latest release there are 2 dll files [websocket-sharp-core.dll](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/websocket-sharp-core.dll) is a library required! to send HeartRate data to Hype Rate put this in `rml_libs` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_libs`. (or if you use MonkeyLoader goes in `C:\Program Files (x86)\Steam\steamapps\common\Resonite\monkeyloader/libs`)
-Then you put [ResoniteHeartRate.dll](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/ResoniteHeartRate.dll) into the `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` You can create these folders if there missing.
-
-![dlls](https://github.com/HamoCorp/ResoniteHeartRate/assets/43244781/ac71ccbd-e31d-4b49-9aa9-d5cae79416b0)
-
+2. Place [ResoniteHeartRate.dll](https://github.com/HamoCorp/ResoniteHeartRate/releases/latest/download/ResoniteHeartRate.dll) into your `rml_mods` folder. This folder should be at `C:\Program Files (x86)\Steam\steamapps\common\Resonite\rml_mods` for a default install. You can create it if it's missing, or if you launch the game once with ResoniteModLoader installed it will create this folder for you.
+3. To be able to edit settings you also need to have [Resonite Mod Settings](https://github.com/badhaloninja/ResoniteModSettings) installed.
 4. Start the game. go to your mod setting and enter your [HypeRate ID](https://www.hyperate.io/webbluetooth) or [Pulsoid key](https://pulsoid.net) and save settings.
 
 ## Facets
