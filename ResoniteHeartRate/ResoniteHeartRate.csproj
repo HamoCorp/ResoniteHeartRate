@@ -27,8 +27,8 @@
 			<HintPath>$(ResonitePath)Elements.Core.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="websocket-sharp">
-			<HintPath>$(ResonitePath)websocket-sharp.dll</HintPath>
+		<Reference Include="WatsonWebsocket">
+			<HintPath>$(ResonitePath)WatsonWebsocket.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>

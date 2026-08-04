@@ -1,67 +1,57 @@
 ﻿using ResoniteModLoader;
 
-using WebSocketSharp;
-
-using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
-
 namespace ResoniteHeartRate;
 
+using WatsonWebsocket;
 internal class HypeRateWebSocket {
 
 	public HypeRateWebSocket(string HypeRateID) {
-		string url = "wss://app.hyperate.io/socket/websocket?token=" + SECRET_UNIQUE_HYPERATE_API_KEY;
+		Uri url = new Uri("wss://app.hyperate.io/socket/websocket?token=" + SECRET_UNIQUE_HYPERATE_API_KEY);
 
-		_ws = new WebSocket(url);
+		_ws = new WatsonWsClient(url);
 
-		// Required: force modern TLS
-		_ws.SslConfiguration.EnabledSslProtocols =
-			System.Security.Authentication.SslProtocols.Tls12
-			| System.Security.Authentication.SslProtocols.Tls12;
-
-		// Debug logging
-		_ws.OnError += (s, e) => {
-			ResoniteMod.Error($"[HypeRate WS ERROR] {e.Message}\n{e.Exception}");
-		};
-
-		_ws.OnClose += (s, e) => {
-			ResoniteMod.Error($"[HypeRate WS CLOSED] Code={e.Code}, Reason={e.Reason}");
-		};
-
-		_ws.OnMessage += Ws_OnMessage;
+		_ws.ServerConnected += ServerConnected;
+		_ws.ServerDisconnected += ServerDisconnected;
+		_ws.MessageReceived += MessageReceived;
 
 		try {
-			_ws.Connect();
+			_ws.Start();
 		} catch (Exception ex) {
-			ResoniteMod.Error("[HypeRate] Exception during Connect(): " + ex);
+			ResoniteMod.Error("[HypeRate] Exception during Start(): " + ex);
 			return;
 		}
 
-		if (!_ws.IsAlive) {
-			ResoniteMod.Error("[HypeRate] WebSocket failed to connect.");
-			return;
-		}
-
-		// Only send join message AFTER a successful connect
 		string joinMsg = new HypeRateJson("hr:" + HypeRateID, "phx_join", "", "0").ToJson();
-		_ws.Send(joinMsg);
+
+		_ws.SendAsync(joinMsg);
 	}
 
 	public void SendKeepAlive() {
-		_ws.Send(HypeRateJson.KeepAliveMessage());
+		_ws?.SendAsync(HypeRateJson.KeepAliveMessage());
 	}
 
-	private static void Ws_OnError(object sender, ErrorEventArgs e) {
-		ResoniteMod.Error("Hype rate websocket Did not return valid stuff: " + e.ToString());
+	private void ServerConnected(object sender, EventArgs e) {
+		ResoniteMod.Msg("[HypeRate] Connected");
 	}
 
-	private static void Ws_OnMessage(object sender, MessageEventArgs e) {
+	private void ServerDisconnected(object sender, EventArgs e) {
+		ResoniteMod.Warn("[HypeRate] Disconnected");
+	}
+
+	private void MessageReceived(object sender, MessageReceivedEventArgs e) {
 		try {
-			HypeRateJson hj = new(e.Data);
+			string data = System.Text.Encoding.UTF8.GetString(e.Data);
+
+			HypeRateJson hj = new(data);
 			string evnt = hj.GetEvent();
 
 			switch (evnt) {
 				case "hr_update":
 					_heartRate = hj.GetHeartRate();
+					break;
+
+				case "heartbeat":
+					_HypeRateIsAlive = true;
 					break;
 
 				case "phx_reply":
@@ -77,15 +67,18 @@ internal class HypeRateWebSocket {
 		}
 	}
 
-	public int GetHypeRateHeartRate() { return _heartRate; }
+	public int GetHypeRateHeartRate() => _heartRate;
 
-	public bool GetHypeRateAlive() { return _HypeRateIsAlive; }
-	public void SetHypeRateAliveOnLoop() { _HypeRateIsAlive = false; }
+	public bool GetHypeRateAlive() => _HypeRateIsAlive;
+
+	public void SetHypeRateAliveOnLoop() {
+		_HypeRateIsAlive = false;
+	}
 
 	//my Secret asigned api key from https://www.hyperate.io/api
 	private const string SECRET_UNIQUE_HYPERATE_API_KEY = "dbbxSOFxzN9ySSrz53eXXtJIQjMZ3ZIOJfMV6fG9J4jbjn9vJD2vsFm7rYqrUgs3";
 
-	private static WebSocket _ws;
+	private static WatsonWsClient _ws;
 	private static bool _HypeRateIsAlive = false;
 	private static int _heartRate = 0;
 	public class HypeRateJson {
